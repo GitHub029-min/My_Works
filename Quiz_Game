@@ -1,0 +1,63 @@
+#include<bits/stdc++.h>
+struct Player {
+    std::string name;
+    int score;
+};
+void displayLeaderboard(std::vector<Player> &leaderboard) {
+    std::cout << "\n***** LEADERBOARD *****\n";
+    std::sort(leaderboard.begin(), leaderboard.end(), [](Player a, Player b) { return a.score > b.score; });
+
+    for (size_t i = 0; i < leaderboard.size(); i++) {
+        std::cout << i + 1 << ". " << leaderboard[i].name << " - Score: " << leaderboard[i].score << "%\n";
+    }
+}
+int main() {
+    std::string playerName;
+    std::cout << "Enter your name: ";
+    std::cin >> playerName;
+    std::string questions[] = {"1. Which data structure is used to implement a stack in C++?: ",
+                               "2. What is the time complexity of accessing an element in an array by index?: ",
+                               "3. Which sorting algorithm uses a divide-and-conquer approach?: ",
+                               "4. Which algorithm is used to detect cycles in a graph ?"};
+
+    std::string options[][4] = {{"A. Array", "B. Linked List", "C. Both A and B", "D. Tree"},
+                                {"A. O(1)", "B. O(n)", "C. O(𝑛2)", "D. O(nlogn)"},
+                                {"A. Bubble Sort", "B. Insertion Sort", "C. Selection Sort", "D. Merge Sort"},
+                                {"A. Array", "B. BFS", "C. DFS", "D. Stack"}};
+
+    char answerKey[] = {'C', 'A', 'D', 'C'};
+    int size = sizeof(questions) / sizeof(questions[0]);
+    char guess;
+    int score = 0;
+    for (int i = 0; i < size; i++) {
+        std::cout << "\n";
+        std::cout << questions[i] << '\n';
+        std::cout << "\n";
+        for (int j = 0; j < sizeof(options[i]) / sizeof(options[i][0]); j++) {
+            std::cout << options[i][j] << '\n';
+        }
+        std::cout << "\n";
+        std::cin >> guess;
+        guess = toupper(guess);
+        if (guess == answerKey[i]) {
+            std::cout << "\n";
+            std::cout << "Your Answer is CORRECT\n";
+            score++;
+        } else {
+            std::cout << "\n";
+            std::cout << "Your Answer is WRONG!\n";
+            std::cout << "Correct Answer is: " << answerKey[i] << '\n';
+        }
+    }
+    int percentageScore = (score / (double)size) * 100;
+    std::cout << "\n";
+    std::cout << "*           RESULTS           *\n";
+    std::cout << "\n";
+    std::cout << "CORRECT GUESSES: " << score << '\n';
+    std::cout << "NUMBER of QUESTIONS: " << size << '\n';
+    std::cout << "SCORE: " << percentageScore << "%\n";
+    static std::vector<Player> leaderboard;
+    leaderboard.push_back({playerName, percentageScore});
+    displayLeaderboard(leaderboard);
+    return 0;
+}
