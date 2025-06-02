@@ -5,7 +5,6 @@ struct Player {
     string name;
     int score;
 };
-
 void displayLeaderboard(vector<Player> &leaderboard) {
     cout << "\n***** LEADERBOARD *****\n";
     sort(leaderboard.begin(), leaderboard.end(), [](Player a, Player b) { return a.score > b.score; });
@@ -18,7 +17,8 @@ void displayLeaderboard(vector<Player> &leaderboard) {
 int main() {
     string playerName;
     cout << "Enter your name: ";
-    cin >> playerName;
+    cin.ignore();
+    getline(cin, playerName);
 
     string questions[] = {"1. Which data structure is used to implement a stack in C++? ",
                           "2. What is the time complexity of accessing an element in an array by index? ",
@@ -26,7 +26,7 @@ int main() {
                           "4. Which algorithm is used to detect cycles in a graph? "};
 
     string options[][4] = {{"A. Array", "B. Linked List", "C. Both A and B", "D. Tree"},
-                           {"A. O(1)", "B. O(n)", "C. O(log2)", "D. O(nlogn)"},
+                           {"A. O(1)", "B. O(n)", "C. O(𝑛2)", "D. O(nlogn)"},
                            {"A. Bubble Sort", "B. Insertion Sort", "C. Selection Sort", "D. Merge Sort"},
                            {"A. Array", "B. BFS", "C. DFS", "D. Stack"}};
 
@@ -57,7 +57,6 @@ int main() {
     cout << "CORRECT GUESSES: " << score << "\n";
     cout << "NUMBER of QUESTIONS: " << size << "\n";
     cout << "SCORE: " << percentageScore << "%\n";
-
     static vector<Player> leaderboard;
     leaderboard.push_back({playerName, percentageScore});
     displayLeaderboard(leaderboard);
