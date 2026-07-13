@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    bg: '#080808',
+                    'bg-el': '#0f0f0f',
+                    card: '#141414',
+                    bdr: '#252525',
+                    fg: '#ede8df',
+                    muted: '#8a8480',
+                    accent: '#c47d2e',
+                    'accent-lt': '#dda65c',
+                    'accent-dk': '#8f5a1a',
+                },
+                fontFamily: {
+                    display: ['"Space Grotesk"', 'sans-serif'],
+                    body: ['"DM Sans"', 'sans-serif'],
+                }
+            }
+        }
+    }
+    </script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        :root {
+            --bg: #080808;
+            --fg: #ede8df;
+            --muted: #8a8480;
+            --accent: #c47d2e;
+            --accent-lt: #dda65c;
+            --accent-dk: #8f5a1a;
+            --card: #141414;
+            --border: #252525;
+        }
+        *{ margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+        }
+        ::selection { background: var(--accent); color: var(--bg); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        #loader {
+            position: fixed; inset: 0; z-index: 200;
+            background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        #loader.hidden { opacity: 0; visibility: hidden; }
+        .loader-ring {
+            width: 48px; height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .cursor-dot {
+            position: fixed; width: 8px; height: 8px;
+            background: var(--accent); border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
+        }
+        .cursor-ring {
+            position: fixed; width: 36px; height: 36px;
+            border: 1.5px solid var(--accent); border-radius: 50%;
+            pointer-events: none; z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease, border-color 0.3s, opacity 0.3s;
+            opacity: 0.5;
+        }
+        .cursor-ring.hover { width: 56px; height: 56px; border-color: var(--accent-lt); opacity: 0.8; }
+
+        .noise-overlay {
+            position: fixed; inset: 0; z-index: 1;
+            pointer-events: none; opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        #bg-canvas {
+            position: fixed; inset: 0; z-index: 0;
+            width: 100%; height: 100%;
+        }
+
+        .nav-glass {
+            background: rgba(8, 8, 8, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(37, 37, 37, 0.5);
+        }
+        .nav-link {
+            position: relative; color: var(--muted);
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active { color: var(--fg); }
+        .nav-link::after {
+            content: ''; position: absolute;
+            bottom: -4px; left: 0; width: 0; height: 2px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+        .nav-link.active::after, .nav-link:hover::after { width: 100%; }
+
+        .mobile-menu {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+        .mobile-menu.open { max-height: 300px; }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, rgba(8,8,8,0.95) 0%, rgba(8,8,8,0.55) 50%, rgba(8,8,8,0.15) 100%);
+        }
+        @media (min-width: 1024px) {
+            .hero-gradient {
+                background: linear-gradient(90deg, rgba(8,8,8,0.97) 0%, rgba(8,8,8,0.75) 42%, rgba(8,8,8,0.05) 100%);
+            }
+        }
+        .hero-fade-bottom {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
+            background: linear-gradient(to bottom, transparent, var(--bg));
+            pointer-events: none;
+        }
+
+        .accent-line {
+            width: 60px; height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-lt));
+            border-radius: 2px;
+        }
+
+        .section-label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.75rem; font-weight: 600;
+            letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .reveal {
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+        .reveal-delay-4 { transition-delay: 0.4s; }
+
+        .stat-card {
+            border: 1px solid var(--border);
+            transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(196,125,46,0.05) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .stat-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(196,125,46,0.1);
+        }
+        .stat-card:hover::before { opacity: 1; }
+        .stat-card .stat-hint {
+            position: absolute; bottom: 8px; right: 10px;
+            font-size: 0.6rem; color: var(--accent);
+            opacity: 0; transition: opacity 0.3s;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .stat-card:hover .stat-hint { opacity: 0.7; }
+
+        .skill-bar-track {
+            height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+        }
+        .skill-bar-fill {
+            height: 100%; width: 0; border-radius: 3px;
+            background: linear-gradient(90deg, var(--accent-dk), var(--accent), var(--accent-lt));
+            transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-dk), var(--accent));
+            color: #0a0a0a;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(221, 166, 92, 0.3);
+            transition: transform 0.2s, box-shadow 0.3s, border-color 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(196, 125, 46, 0.35);
+            border-color: rgba(221, 166, 92, 0.5);
+        }
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-outline {
+            border: 1.5px solid var(--border);
+            color: var(--fg);
+            transition: border-color 0.3s, transform 0.2s, background 0.3s;
+        }
+        .btn-outline:hover {
+            border-color: var(--accent);
+            background: rgba(196, 125, 46, 0.05);
+            transform: translateY(-2px);
+        }
+
+        @keyframes bounce-down {
+            0%, 100% { transform: translateY(0); opacity: 0.6; }
+            50% { transform: translateY(10px); opacity: 1; }
+        }
+        .scroll-indicator { animation: bounce-down 2s ease infinite; }
+
+        .section-sep {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+        }
+
+        .blueprint-lines {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.025;
+            background-image:
+                linear-gradient(var(--accent) 1px, transparent 1px),
+                linear-gradient(90deg, var(--accent) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .popup-overlay {
+            position: fixed; inset: 0; z-index: 150;
+            background: rgba(0, 0, 0, 0);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+            transition: background 0.5s ease, backdrop-filter 0.5s ease, -webkit-backdrop-filter 0.5s ease;
+            padding: 20px;
+        }
+        .popup-overlay.active {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            pointer-events: all;
+        }
+
+        .popup-card {
+            width: 100%; max-width: 640px; max-height: 85vh;
+            background: linear-gradient(165deg, #1a1816 0%, #111010 40%, #0d0b0a 100%);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0; overflow: hidden;
+            transform: perspective(1200px) rotateX(25deg) rotateY(-10deg) scale(0.7) translateY(80px);
+            opacity: 0;
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease, box-shadow 0.7s ease;
+            box-shadow: 0 0 0 1px rgba(196,125,46,0), 0 30px 100px rgba(0,0,0,0.5);
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        .popup-overlay.active .popup-card {
+            transform: perspective(1200px) rotateX(0deg) rotateY(0deg) scale(1) translateY(0);
+            opacity: 1;
+            box-shadow: 0 0 0 1px rgba(196,125,46,0.15), 0 30px 100px rgba(0,0,0,0.6), 0 0 80px rgba(196,125,46,0.05);
+        }
+
+        .popup-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), var(--accent-lt), var(--accent), transparent);
+            transform: translateZ(2px);
+        }
+
+        .popup-header {
+            padding: 28px 32px 0;
+            transform: translateZ(15px);
+            position: relative;
+        }
+        .popup-body {
+            padding: 20px 32px 32px;
+            overflow-y: auto;
+            max-height: calc(85vh - 100px);
+            transform: translateZ(10px);
+            position: relative;
+        }
+        .popup-body::-webkit-scrollbar { width: 4px; }
+        .popup-body::-webkit-scrollbar-track { background: transparent; }
+        .popup-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .popup-close {
+            position: absolute; top: 20px; right: 20px;
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+            transform: translateZ(20px);
+        }
+        .popup-close:hover {
+            background: rgba(196,125,46,0.15);
+            border-color: var(--accent);
+            color: var(--accent-lt);
+            transform: translateZ(20px) scale(1.05);
+        }
+
+        .popup-timeline {
+            position: relative;
+            padding-left: 24px;
+        }
+        .popup-timeline::before {
+            content: '';
+            position: absolute; left: 6px; top: 8px; bottom: 8px;
+            width: 1.5px;
+            background: linear-gradient(to bottom, var(--accent), var(--border), transparent);
+        }
+        .popup-timeline-item {
+            position: relative;
+            padding-bottom: 24px;
+            transform: translateX(-10px);
+            opacity: 0;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        .popup-overlay.active .popup-timeline-item { transform: translateX(0); opacity: 1; }
+        .popup-overlay.active .popup-timeline-item:nth-child(1) { transition-delay: 0.3s; }
+        .popup-overlay.active .popup-timeline-item:nth-child(2) { transition-delay: 0.4s; }
+        .popup-overlay.active .popup-timeline-item:nth-child(3) { transition-delay: 0.5s; }
+        .popup-overlay.active .popup-timeline-item:nth-child(4) { transition-delay: 0.6s; }
+        .popup-overlay.active .popup-timeline-item:nth-child(5) { transition-delay: 0.7s; }
+        .popup-overlay.active .popup-timeline-item:nth-child(6) { transition-delay: 0.8s; }
+
+        .popup-timeline-item::before {
+            content: '';
+            position: absolute; left: -22px; top: 6px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg);
+            box-shadow: 0 0 8px rgba(196,125,46,0.3);
+        }
+        .popup-timeline-item:last-child { padding-bottom: 0; }
+
+        .popup-project-item {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            background: rgba(255,255,255,0.015);
+            transition: border-color 0.3s;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: border-color 0.3s, transform 0.5s ease, opacity 0.5s ease;
+        }
+        .popup-overlay.active .popup-project-item { opacity: 1; transform: translateY(0); }
+        .popup-overlay.active .popup-project-item:nth-child(1) { transition-delay: 0.3s; }
+        .popup-overlay.active .popup-project-item:nth-child(2) { transition-delay: 0.4s; }
+        .popup-overlay.active .popup-project-item:nth-child(3) { transition-delay: 0.5s; }
+        .popup-overlay.active .popup-project-item:nth-child(4) { transition-delay: 0.6s; }
+        .popup-overlay.active .popup-project-item:nth-child(5) { transition-delay: 0.7s; }
+        .popup-overlay.active .popup-project-item:nth-child(6) { transition-delay: 0.8s; }
+        .popup-overlay.active .popup-project-item:nth-child(7) { transition-delay: 0.9s; }
+        .popup-overlay.active .popup-project-item:nth-child(8) { transition-delay: 1.0s; }
+        .popup-project-item:hover { border-color: rgba(196,125,46,0.3); }
+
+        .popup-thesis-block {
+            border: 1px solid rgba(196,125,46,0.2);
+            border-radius: 16px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(196,125,46,0.04) 0%, rgba(196,125,46,0.01) 100%);
+            opacity: 0;
+            transform: translateY(15px);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        .popup-overlay.active .popup-thesis-block { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { transition: opacity 0.3s ease; transform: none; }
+            .reveal.visible { transform: none; }
+            .scroll-indicator { animation: none; }
+            .project-card .project-img { transition: none; }
+            .popup-card { transition: opacity 0.3s ease; transform: none !important; }
+            .popup-overlay.active .popup-card { transform: none !important; }
+        }
+        @media (hover: none) and (pointer: coarse) {
+            .cursor-dot, .cursor-ring { display: none; }
+        }
+        @media (max-width: 640px) {
+            .popup-header { padding: 24px 20px 0; }
+            .popup-body { padding: 16px 20px 24px; }
+            .popup-close { top: 16px; right: 16px; }
+        }
+    </style>
+</head>
+<body class="font-body">
+    <div id="loader"><div class="loader-ring"></div></div>
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+    <div class="noise-overlay"></div>
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-card" id="popupCard">
+            <button class="popup-close" id="popupClose" aria-label="Close popup">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="popup-header">
+                <p class="section-label mb-2" id="popupLabel"></p>
+                <h3 class="font-display text-2xl sm:text-3xl font-bold tracking-tight" id="popupTitle"></h3>
+            </div>
+            <div class="popup-body" id="popupBody"></div>
+        </div>
+    </div>
+
+    <nav class="nav-glass fixed top-0 left-0 right-0 z-50" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="#hero" class="font-display font-bold text-xl tracking-tight text-fg">Opi<span class="text-accent"></span></a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#about" class="nav-link font-display text-sm font-medium" data-section="about">About</a>
+                <a href="#" id="navProjectsDesktop" class="nav-link font-display text-sm font-medium">Projects</a>
+                <a href="#contact" class="nav-link font-display text-sm font-medium" data-section="contact">Contact</a>
+            </div>
+            <button id="menuToggle" class="md:hidden text-fg text-xl focus:outline-none" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="mobile-menu md:hidden px-6 pb-4" id="mobileMenu">
+            <div class="flex flex-col gap-4 pt-2 border-t border-bdr">
+                <a href="#about" class="nav-link font-display text-sm font-medium py-2" data-section="about">About</a>
+                <a href="#" id="navProjectsMobile" class="nav-link font-display text-sm font-medium py-2">Projects</a>
+                <a href="#contact" class="nav-link font-display text-sm font-medium py-2" data-section="contact">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative z-10">
+        <section id="hero" class="relative min-h-screen flex items-center">
+            <div class="hero-gradient absolute inset: 0 z-[1]"></div>
+            <div class="hero-fade-bottom z-[2]"></div>
+            <div class="relative z-[3] max-w-7xl mx-auto px-6 w-full pt-24 pb-32">
+                <div class="max-w-2xl">
+                    <div class="reveal">
+                        <p class="section-label mb-4">Civil Engineer & Researcher</p>
+                    </div>
+                    <h1 class="reveal reveal-delay-1 font-display text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-6">Opi<br>
+                    <span class="text-accent">Barua</span>
+                    </h1>
+                    <div class="reveal reveal-delay-2 accent-line mb-6"></div>
+                    <div class="reveal reveal-delay-3 flex flex-wrap gap-4">
+                        <a href="#projects" class="btn-primary px-7 py-3.5 rounded-lg font-display text-sm inline-flex items-center gap-2">
+                            View Projects <i class="fas fa-arrow-right text-xs"></i>
+                        </a>
+                        <a href="OPI BARUA_Resume.pdf" class="btn-outline px-7 py-3.5 rounded-lg font-display text-sm inline-flex items-center gap-2">
+                        CV</a>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-[3] scroll-indicator">
+                <div class="flex flex-col items-center gap-2 text-muted text-xs font-display tracking-widest">
+                    <span>SCROLL</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="relative bg-bg py-24 sm:py-32 overflow-hidden">
+            <div class="blueprint-lines"></div>
+            <div class="max-w-7xl mx-auto px-6 relative z-10">
+                <div class="grid lg:grid-cols-2 gap-16 items-start">
+                    <div>
+                    <p class="reveal section-label mb-4">About Me</p>
+                    <div class="reveal reveal-delay-2 space-y-4 text-muted leading-relaxed">
+                    <p> Water and land don't stay still — especially in Bangladesh's deltas. That's the question driving most of my work: how do coastlines, wetlands, 
+                        and aquifers change, and what does that mean for the people who depend on them?<br> 
+                        I'm an M.Sc. candidate in Water Resources Development at BUET's IWFM, with a civil engineering background and a growing toolkit in geospatial 
+                        analysis — Google Earth Engine, ArcGIS, Random Forest classification, RockWorks. Here, you'll find the research, scripts, and analyses that 
+                        came out of chasing that question.
+                    </p>
+                    </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="reveal reveal-delay-1 stat-card rounded-xl p-6 text-center bg-card" data-popup="experience">
+                            <div class="font-display text-2xl font-bold text-accent mb-1">Experience</div>
+                            <span class="stat-hint">Click to explore</span>
+                        </div>
+                        <div class="reveal reveal-delay-2 stat-card rounded-xl p-6 text-center bg-card" data-popup="education">
+                            <div class="font-display text-2xl font-bold text-accent mb-1">Education</div>
+                            <span class="stat-hint">Click to explore</span>
+                        </div>
+                        <div class="reveal reveal-delay-3 stat-card rounded-xl p-6 text-center bg-card" data-popup="academic-projects">
+                            <div class="font-display text-2xl font-bold text-accent mb-1">Academic Projects</div>
+                            <span class="stat-hint">Click to explore</span>
+                        </div>
+                        <div class="reveal reveal-delay-4 stat-card rounded-xl p-6 text-center bg-card" data-popup="thesis">
+                            <div class="font-display text-2xl font-bold text-accent mb-1">Thesis</div>
+                            <span class="stat-hint">Click to explore</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-sep max-w-7xl mx-auto"></div>
+
+        <section id="contact" class="relative bg-bg py-24 sm:py-32 overflow-hidden">
+            <div class="blueprint-lines"></div>
+            <div class="max-w-7xl mx-auto px-6 relative z-10">
+                <div>
+                    <h2 class="reveal reveal-delay-1 font-display text-3xl sm:text-4xl font-bold tracking-tight">
+                    Contact Me</h2>
+                    <p class="reveal reveal-delay-2 text-muted leading-relaxed mb-10 max-w-md">
+                        Whether you need structural consultation, full design services, or a feasibility study for an upcoming development, I'd love to hear about it.
+                    </p>
+                    <div class="reveal reveal-delay-3 space-y-5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-card border border-bdr flex items-center justify-center text-accent"><i class="fas fa-envelope text-sm"></i></div>
+                            <div><div class="text-xs text-muted mb-0.5">Email</div><div class="text-sm font-medium">opibaruadipto@gmail.com</div></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-card border border-bdr flex items-center justify-center text-accent"><i class="fas fa-phone text-sm"></i></div>
+                            <div><div class="text-xs text-muted mb-0.5">Phone</div><div class="text-sm font-medium">+8801812692584</div></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-card border border-bdr flex items-center justify-center text-accent"><i class="fas fa-map-marker-alt text-sm"></i></div>
+                            <div><div class="text-xs text-muted mb-0.5">Location</div><div class="text-sm font-medium">Nadda, Gulshan, Dhaka-1212</div></div>
+                        </div>
+                        <div class="flex gap-3 pt-4">
+                            <a href="https://www.linkedin.com/in/opibaruadipto/" class="w-10 h-10 rounded-lg bg-card border border-bdr flex items-center justify-center text-muted hover:text-accent hover:border-accent transition-colors" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                            <a href="https://github.com/opibaruadipto" class="w-10 h-10 rounded-lg bg-card border border-bdr flex items-center justify-center text-muted hover:text-accent hover:border-accent transition-colors" aria-label="GitHub"><i class="fab fa-github"></i></a> 
+                            <a href="https://wa.me/8801709789079" class="w-10 h-10 rounded-lg bg-card border border-bdr flex items-center justify-center text-muted hover:text-accent hover:border-accent transition-colors" aria-label="Whatsapp"><i class="fab fa-whatsapp"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="relative z-10 border-t border-bdr bg-bg">
+        <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p class="text-muted text-sm">This website design by Mitu Barua Omi.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        const canvas = document.getElementById('bg-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 4, 9);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+
+        let mouseX = 0, mouseY = 0, targetMouseX = 0, targetMouseY = 0;
+        let scrollProgress = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            targetMouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            targetMouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+        window.addEventListener('scroll', () => {
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+        });
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (waterMaterial) waterMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+        });
+
+        const waterVertexShader = `
+            uniform float uTime;
+            varying vec2 vUv;
+            varying float vElevation;
+            varying vec3 vWorldPos;
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+                float wave1 = sin(pos.x * 1.8 + uTime * 0.6) * 0.15;
+                float wave2 = sin(pos.z * 2.2 + uTime * 0.5) * 0.12;
+                float wave3 = sin((pos.x + pos.z) * 1.2 + uTime * 0.8) * 0.08;
+                float wave4 = sin(pos.x * 3.5 - pos.z * 2.8 + uTime * 1.2) * 0.04;
+                pos.y += wave1 + wave2 + wave3 + wave4;
+                vElevation = pos.y;
+                vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+                vWorldPos = worldPos.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPos;
+            }
+        `;
+        const waterFragmentShader = `
+            uniform float uTime;
+            uniform vec2 uMouse;
+            uniform float uMouseActive;
+            varying vec2 vUv;
+            varying float vElevation;
+            varying vec3 vWorldPos;
+            void main() {
+                vec3 deepColor = vec3(0.02, 0.04, 0.07);
+                vec3 shallowColor = vec3(0.04, 0.12, 0.18);
+                vec3 highlightColor = vec3(0.12, 0.22, 0.30);
+                float mixFactor = smoothstep(-0.2, 0.25, vElevation);
+                vec3 waterColor = mix(deepColor, shallowColor, mixFactor * 0.6 + 0.2);
+                float highlight = smoothstep(0.12, 0.3, vElevation);
+                waterColor += highlightColor * highlight * 0.5;
+                vec2 mouseWorld = uMouse * 8.0;
+                float dist = length(vWorldPos.xz - mouseWorld);
+                float ripple = sin(dist * 6.0 - uTime * 4.0) * exp(-dist * 0.4) * 0.5;
+                ripple *= uMouseActive;
+                waterColor += vec3(0.08, 0.15, 0.22) * max(ripple, 0.0);
+                float caustic = sin(vWorldPos.x * 5.0 + uTime * 0.3) * sin(vWorldPos.z * 5.0 + uTime * 0.4);
+                caustic = smoothstep(0.6, 1.0, caustic) * 0.08;
+                waterColor += vec3(0.05, 0.1, 0.15) * caustic;
+                float edgeFade = smoothstep(0.0, 0.15, vUv.x) * smoothstep(1.0, 0.85, vUv.x) * smoothstep(0.0, 0.15, vUv.y) * smoothstep(1.0, 0.85, vUv.y);
+                waterColor *= edgeFade;
+                gl_FragColor = vec4(waterColor, 0.85 * edgeFade);
+            }
+        `;
+        const waterGeometry = new THREE.PlaneGeometry(20, 20, 200, 200);
+        waterGeometry.rotateX(-Math.PI / 2);
+        const waterMaterial = new THREE.ShaderMaterial({
+            vertexShader: waterVertexShader,
+            fragmentShader: waterFragmentShader,
+            uniforms: {
+                uTime: { value: 0 },
+                uMouse: { value: new THREE.Vector2(0, 0) },
+                uMouseActive: { value: 0 },
+                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+            },
+            transparent: true, side: THREE.DoubleSide, depthWrite: false,
+        });
+        const water = new THREE.Mesh(waterGeometry, waterMaterial);
+        water.position.y = -2;
+        scene.add(water);
+
+        function createIBeam(length, height, webThick, flangeW, flangeT, material) {
+            const group = new THREE.Group();
+            const l = Math.max(0.01, length), h = Math.max(0.01, height);
+            const w = Math.max(0.005, webThick), fw = Math.max(0.01, flangeW), ft = Math.max(0.005, flangeT);
+            const webGeo = new THREE.BoxGeometry(w, h, l);
+            const web = new THREE.Mesh(webGeo, material);
+            group.add(web);
+            const flangeGeo = new THREE.BoxGeometry(fw, ft, l);
+            const topFlange = new THREE.Mesh(flangeGeo, material);
+            topFlange.position.y = h / 2;
+            group.add(topFlange);
+            const bottomFlange = new THREE.Mesh(flangeGeo, material);
+            bottomFlange.position.y = -h / 2;
+            group.add(bottomFlange);
+            const edgesMat = new THREE.LineBasicMaterial({ color: 0x8a6e50, transparent: true, opacity: 0.25 });
+            [web, topFlange, bottomFlange].forEach(mesh => {
+                const edges = new THREE.EdgesGeometry(mesh.geometry);
+                const line = new THREE.LineSegments(edges, edgesMat);
+                line.position.copy(mesh.position);
+                group.add(line);
+            });
+            return group;
+        }
+
+        function createAngle(length, size, thick, mat) {
+            const group = new THREE.Group();
+            const l = Math.max(0.01, length), s = Math.max(0.01, size), t = Math.max(0.005, thick);
+            const leg1 = new THREE.Mesh(new THREE.BoxGeometry(t, s, l), mat);
+            leg1.position.x = -s / 2 + t / 2;
+            group.add(leg1);
+            const leg2 = new THREE.Mesh(new THREE.BoxGeometry(s, t, l), mat);
+            leg2.position.y = -s / 2 + t / 2;
+            group.add(leg2);
+            const edgesMat = new THREE.LineBasicMaterial({ color: 0x8a6e50, transparent: true, opacity: 0.2 });
+            [leg1, leg2].forEach(m => {
+                const edges = new THREE.EdgesGeometry(m.geometry);
+                const line = new THREE.LineSegments(edges, edgesMat);
+                line.position.copy(m.position);
+                group.add(line);
+            });
+            return group;
+        }
+
+        const ironMat = new THREE.MeshStandardMaterial({ color: 0x3a3228, roughness: 0.65, metalness: 0.85 });
+        const ironMatRusty = new THREE.MeshStandardMaterial({ color: 0x4a3828, roughness: 0.8, metalness: 0.7 });
+
+        const beamStructure = new THREE.Group();
+        const column1 = createIBeam(0.12, 3.5, 0.06, 0.35, 0.08, ironMat);
+        column1.position.set(-2.5, 0.5, 0);
+        beamStructure.add(column1);
+        const column2 = createIBeam(0.12, 3.5, 0.06, 0.35, 0.08, ironMat);
+        column2.position.set(2.5, 0.5, 0);
+        beamStructure.add(column2);
+        const mainBeam = createIBeam(5.2, 0.5, 0.05, 0.4, 0.07, ironMat);
+        mainBeam.position.set(0, 2.3, 0);
+        mainBeam.rotation.y = Math.PI / 2;
+        beamStructure.add(mainBeam);
+        const crossBeam = createIBeam(4, 0.35, 0.04, 0.3, 0.06, ironMatRusty);
+        crossBeam.position.set(0, 2.0, -0.8);
+        beamStructure.add(crossBeam);
+        const diag1 = createAngle(2.8, 0.15, 0.03, ironMatRusty);
+        diag1.position.set(-1.25, 1.15, 0);
+        diag1.rotation.z = Math.PI / 4;
+        beamStructure.add(diag1);
+        const diag2 = createAngle(2.8, 0.15, 0.03, ironMatRusty);
+        diag2.position.set(1.25, 1.15, 0);
+        diag2.rotation.z = -Math.PI / 4;
+        beamStructure.add(diag2);
+        const hBrace = createIBeam(1.8, 0.2, 0.03, 0.18, 0.04, ironMatRusty);
+        hBrace.position.set(0, 0.8, 0);
+        hBrace.rotation.y = Math.PI / 2;
+        beamStructure.add(hBrace);
+        const basePlateGeo = new THREE.BoxGeometry(0.6, 0.06, 0.5);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x2a2218, roughness: 0.9, metalness: 0.6 });
+        const base1 = new THREE.Mesh(basePlateGeo, baseMat);
+        base1.position.set(-2.5, -1.28, 0);
+        beamStructure.add(base1);
+        const base2 = new THREE.Mesh(basePlateGeo, baseMat);
+        base2.position.set(2.5, -1.28, 0);
+        beamStructure.add(base2);
+        const boltGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.08, 8);
+        const boltMat = new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 0.5, metalness: 0.9 });
+        [[-0.2, -1.22], [0.2, -1.22], [-0.2, -1.34], [0.2, -1.34]].forEach(([x, y]) => {
+            const bolt = new THREE.Mesh(boltGeo, boltMat);
+            bolt.position.set(-2.5 + x, y, 0.15);
+            beamStructure.add(bolt);
+            const bolt2 = bolt.clone();
+            bolt2.position.set(2.5 + x, y, 0.15);
+            beamStructure.add(bolt2);
+        });
+        beamStructure.position.set(0, -0.5, -1);
+        beamStructure.rotation.y = -0.3;
+        scene.add(beamStructure);
+
+        const fragments = new THREE.Group();
+        for (let i = 0; i < 6; i++) {
+            const frag = Math.random() > 0.4
+                ? createIBeam(0.8 + Math.random() * 1.2, 0.15 + Math.random() * 0.3, 0.02, 0.12, 0.03, Math.random() > 0.5 ? ironMat : ironMatRusty)
+                : createAngle(0.6 + Math.random() * 0.8, 0.08 + Math.random() * 0.1, 0.02, ironMatRusty);
+            const angle = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
+            const radius = 4 + Math.random() * 3;
+            frag.position.set(Math.cos(angle) * radius, -2 + Math.random() * 0.5, Math.sin(angle) * radius - 1);
+            frag.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI * 0.5);
+            frag.userData.floatSpeed = 0.3 + Math.random() * 0.5;
+            frag.userData.floatOffset = Math.random() * Math.PI * 2;
+            frag.userData.rotSpeed = 0.1 + Math.random() * 0.3;
+            fragments.add(frag);
+        }
+        scene.add(fragments);
+
+        function createGlowTexture(color) {
+            const size = 64, c = document.createElement('canvas');
+            c.width = size; c.height = size;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+            g.addColorStop(0, color); g.addColorStop(0.3, color); g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+            return new THREE.CanvasTexture(c);
+        }
+        const sparkTex = createGlowTexture('rgba(200,160,100,1)');
+        const DUST_COUNT = 300;
+        const dustPos = new Float32Array(DUST_COUNT * 3);
+        const dustVel = [];
+        for (let i = 0; i < DUST_COUNT; i++) {
+            dustPos[i * 3] = (Math.random() - 0.5) * 16;
+            dustPos[i * 3 + 1] = -2 + Math.random() * 6;
+            dustPos[i * 3 + 2] = (Math.random() - 0.5) * 12 - 1;
+            dustVel.push({ x: (Math.random() - 0.5) * 0.002, y: (Math.random() - 0.5) * 0.001, z: (Math.random() - 0.5) * 0.002 });
+        }
+        const dustGeo = new THREE.BufferGeometry();
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+        const dustMat = new THREE.PointsMaterial({ map: sparkTex, size: 0.05, sizeAttenuation: true, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+        scene.add(new THREE.Points(dustGeo, dustMat));
+
+        scene.add(new THREE.AmbientLight(0x1a1510, 0.8));
+        const keyLight = new THREE.DirectionalLight(0xdda65c, 1.5);
+        keyLight.position.set(5, 8, 3);
+        scene.add(keyLight);
+        const fillLight = new THREE.DirectionalLight(0x3a5a7a, 0.4);
+        fillLight.position.set(-4, 3, -2);
+        scene.add(fillLight);
+        const rimLight = new THREE.DirectionalLight(0xc47d2e, 0.6);
+        rimLight.position.set(0, 2, -5);
+        scene.add(rimLight);
+        const warmPoint = new THREE.PointLight(0xdda65c, 1.5, 8);
+        warmPoint.position.set(0, 2.5, 0.5);
+        scene.add(warmPoint);
+        const waterGlow = new THREE.PointLight(0x1a3a5a, 0.8, 12);
+        waterGlow.position.set(0, -1.5, 2);
+        scene.add(waterGlow);
+
+        const clock = new THREE.Clock();
+        let mouseActiveSmooth = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            mouseX += (targetMouseX - mouseX) * 0.05;
+            mouseY += (targetMouseY - mouseY) * 0.05;
+            mouseActiveSmooth += ((Math.abs(targetMouseX) + Math.abs(targetMouseY)) * 0.5 - mouseActiveSmooth) * 0.05;
+            camera.position.x = mouseX * 1.2;
+            camera.position.y = 4 + mouseY * 0.6 - scrollProgress * 3;
+            camera.position.z = 9 - scrollProgress * 2;
+            camera.lookAt(0, 0, -1);
+            waterMaterial.uniforms.uTime.value = t;
+            waterMaterial.uniforms.uMouse.value.set(mouseX, mouseY);
+            waterMaterial.uniforms.uMouseActive.value = Math.min(mouseActiveSmooth * 2, 1);
+            beamStructure.rotation.z = Math.sin(t * 0.3) * 0.008;
+            beamStructure.rotation.x = Math.sin(t * 0.25) * 0.005;
+            fragments.children.forEach(f => {
+                f.position.y += Math.sin(t * f.userData.floatSpeed + f.userData.floatOffset) * 0.001;
+                f.rotation.y += f.userData.rotSpeed * 0.003;
+                f.rotation.x += f.userData.rotSpeed * 0.002;
+            });
+            const dArr = dustGeo.attributes.position.array;
+            for (let i = 0; i < DUST_COUNT; i++) {
+                const ix = i * 3;
+                dArr[ix] += dustVel[i].x + Math.sin(t * 0.2 + i) * 0.0003;
+                dArr[ix + 1] += dustVel[i].y + Math.cos(t * 0.15 + i * 0.5) * 0.0002;
+                dArr[ix + 2] += dustVel[i].z;
+                if (dArr[ix] > 8) dArr[ix] = -8; if (dArr[ix] < -8) dArr[ix] = 8;
+                if (dArr[ix + 1] > 4) dArr[ix + 1] = -2; if (dArr[ix + 1] < -2) dArr[ix + 1] = 4;
+                if (dArr[ix + 2] > 5) dArr[ix + 2] = -7; if (dArr[ix + 2] < -7) dArr[ix + 2] = 5;
+            }
+            dustGeo.attributes.position.needsUpdate = true;
+            warmPoint.intensity = 1.5 + Math.sin(t * 1.2) * 0.3;
+            waterGlow.position.x = Math.sin(t * 0.2) * 2;
+            waterGlow.position.z = 2 + Math.cos(t * 0.15) * 1.5;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // =============================================
+        // POPUP DATA
+        // =============================================
+        const popupData = {
+            experience: {
+                label: 'Work Experience',
+                title: 'Professional Experience',
+                type: 'timeline',
+                items: [
+                    {
+                        period: 'Feb 2024 — Mar 2024',
+                        role: 'Site Engineer',
+                        company: 'Event Tech Builders & Engineers (Pvt.) Ltd.',
+                        location: 'Puran Chandgaon, Chittagong',
+                        desc: 'Monitored cast-in-situ pile construction activities and coordinated site operations to maintain project progress and safety compliance. Prepared estimates for material quantity analysis at Saptapurna Abason project site.'
+                    }
+                ]
+            },
+            education: {
+                label: 'Academic Background',
+                title: 'Education',
+                type: 'timeline',
+                items: [
+                    {
+                        period: '2024 — Present',
+                        role: 'M.Sc. in Water Resources Development',
+                        company: 'Institute of Water and Flood Management, BUET',
+                        location: 'Dhaka, Bangladesh',
+                        desc: 'Currently pursuing postgraduate studies in water resources development. CGPA: 3.00 on a scale of 4.00. Focus on hydrology, flood management, geospatial analysis, and data-driven engineering solutions.'
+                    },
+                    {
+                        period: '2016 — 2020',
+                        role: 'B.Sc. (Engg.) in Civil Engineering',
+                        company: 'Sylhet Engineering College, SUST',
+                        location: 'Sylhet, Bangladesh',
+                        desc: 'Completed undergraduate degree in Civil Engineering. CGPA: 3.40 on a scale of 4.00. Gained strong foundation in structural mechanics, fluid mechanics, geotechnical engineering, and surveying.'
+                    },
+                    {
+                        period: '2014 — 2016',
+                        role: 'Higher Secondary Certificate (H.S.C)',
+                        company: 'Saint Joseph Higher Secondary School',
+                        location: 'Dhaka, Bangladesh',
+                        desc: 'Completed higher secondary education in Science group. GPA: 4.92 on a scale of 5.00.'
+                    },
+                    {
+                        period: '2012 — 2014',
+                        role: 'Secondary School Certificate (S.S.C)',
+                        company: 'Banani Bidyaniketon',
+                        location: 'Dhaka, Bangladesh',
+                        desc: 'Completed secondary education in Science group. GPA: 5.00 on a scale of 5.00 — perfect score.'
+                    }
+                ]
+            },
+            'academic-projects': {
+                label: 'Research & Term Papers',
+                title: 'Academic Projects',
+                type: 'projects',
+                items: [
+                    {
+                        category: 'Water Disaster Management',
+                        title: 'A Policy Review of Flood and Erosion Management Strategies in Bangladesh',
+                        desc: 'Reviewed existing flood and erosion management policies in Bangladesh, identified gaps, and proposed improvements for more effective disaster resilience strategies.'
+                    },
+                    {
+                        category: 'Water Disaster Management',
+                        title: 'The Shrinking Wetlands around the Buriganga River',
+                        desc: 'Investigated the progressive loss of wetland areas surrounding the Buriganga River, analyzing causes including urbanization, pollution, and encroachment with geospatial data.'
+                    },
+                    {
+                        category: 'Coastal Zone Management',
+                        title: 'Climate Change Impacts & Site-specific Adaptations for Sandwip Upazila',
+                        desc: 'Analyzed climate change impacts on Sandwip Upazila and proposed location-specific adaptation strategies considering sea level rise, cyclone vulnerability, and saltwater intrusion.'
+                    },
+                    {
+                        category: 'Integrated Water Resources Management',
+                        title: 'Integrated Water Management Plan for Arial Khan River Basin',
+                        desc: 'Developed a comprehensive water management plan for the climate-vulnerable Arial Khan River Basin, addressing flooding, water scarcity, and ecosystem degradation.'
+                    },
+                    {
+                        category: 'Water and Ecosystem',
+                        title: 'Ecosystem Service Changes & Impacts on Sundarbans',
+                        desc: 'Studied changes in ecosystem services and their cascading impacts on the Sundarbans mangrove forest and the southwestern region of Bangladesh.'
+                    }
+                ]
+            },
+            thesis: {
+                label: 'Undergraduate Research',
+                title: 'B.Sc. Engineering Thesis',
+                type: 'thesis',
+                items: {
+                    title: 'An Investigation of Geometrically Irregular RC Structure of Different Heights Considering Strong Column Weak Beam Concept for Sylhet Region by Non-linear Static Analysis',
+                    tools: ['ETABS', 'AutoCAD', 'Non-linear Static (Pushover) Analysis'],
+                    desc: 'Investigated the seismic behavior of geometrically irregular reinforced concrete structures with varying story heights. Applied the Strong Column Weak Beam design philosophy per BNBC seismic provisions. Conducted non-linear static (pushover) analysis using ETABS to evaluate performance levels, hinge formations, and story drift ratios for structures located in the Sylhet seismic zone of Bangladesh.',
+                    keyFindings: [
+                        'Analyzed multiple RC building models with vertical geometric irregularity',
+                        'Applied pushover analysis to determine global and member-level performance',
+                        'Evaluated strong column-weak beam mechanism effectiveness',
+                        'Assessed compliance with BNBC seismic design criteria for Sylhet region',
+                        'Identified critical failure modes and weak links in irregular structures'
+                    ]
+                }
+            }
+        };
+
+        // =============================================
+        // POPUP LOGIC
+        // =============================================
+        const popupOverlay = document.getElementById('popupOverlay');
+        const popupCard = document.getElementById('popupCard');
+        const popupClose = document.getElementById('popupClose');
+        const popupLabel = document.getElementById('popupLabel');
+        const popupTitle = document.getElementById('popupTitle');
+        const popupBody = document.getElementById('popupBody');
+
+        function openPopup(key) {
+            const data = popupData[key];
+            if (!data) return;
+            popupLabel.textContent = data.label;
+            popupTitle.textContent = data.title;
+            popupBody.innerHTML = '';
+
+            if (data.type === 'timeline') {
+                const timeline = document.createElement('div');
+                timeline.className = 'popup-timeline';
+                data.items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'popup-timeline-item';
+                    el.innerHTML = `
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <span class="text-accent font-display text-xs font-semibold tracking-wide">${item.period}</span>
+                            <span class="text-bdr">|</span>
+                            <span class="text-muted text-xs"><i class="fas fa-map-marker-alt text-[0.6rem] mr-1"></i>${item.location}</span>
+                        </div>
+                        <h4 class="font-display font-bold text-base text-fg mb-0.5">${item.role}</h4>
+                        <p class="text-accent-lt text-sm font-medium mb-2">${item.company}</p>
+                        <p class="text-muted text-sm leading-relaxed">${item.desc}</p>
+                    `;
+                    timeline.appendChild(el);
+                });
+                popupBody.appendChild(timeline);
+            }
+
+            if (data.type === 'projects') {
+                let currentCategory = '';
+                data.items.forEach(item => {
+                    if (item.category !== currentCategory) {
+                        currentCategory = item.category;
+                        const catEl = document.createElement('div');
+                        catEl.className = 'flex items-center gap-2 mt-5 mb-3 first:mt-0';
+                        catEl.innerHTML = `<div class="h-px flex-1 bg-bdr"></div><span class="text-accent font-display text-xs font-semibold tracking-wider uppercase">${item.category}</span><div class="h-px flex-1 bg-bdr"></div>`;
+                        popupBody.appendChild(catEl);
+                    }
+                    const el = document.createElement('div');
+                    el.className = 'popup-project-item mb-3';
+                    el.innerHTML = `
+                        <h4 class="font-display font-bold text-sm text-fg mb-1.5">${item.title}</h4>
+                        <p class="text-muted text-xs leading-relaxed">${item.desc}</p>
+                    `;
+                    popupBody.appendChild(el);
+                });
+            }
+
+            if (data.type === 'thesis') {
+                const d = data.items;
+                const block = document.createElement('div');
+                block.className = 'popup-thesis-block';
+                block.innerHTML = `
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center text-accent text-sm flex-shrink-0 mt-0.5">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <p class="text-[0.65rem] text-accent font-display tracking-wider uppercase mb-1">B.Sc. Engg. Thesis</p>
+                            <h4 class="font-display font-bold text-base text-fg leading-snug">${d.title}</h4>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        ${d.tools.map(t => `<span class="project-tag text-[0.65rem] font-display px-2.5 py-1 rounded-full">${t}</span>`).join('')}
+                    </div>
+                    <p class="text-muted text-sm leading-relaxed mb-5">${d.desc}</p>
+                    <div>
+                        <p class="text-accent font-display text-xs font-semibold tracking-wider uppercase mb-3">Key Findings</p>
+                        <ul class="space-y-2">
+                            ${d.keyFindings.map(f => `
+                                <li class="flex items-start gap-2.5 text-sm text-muted">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 flex-shrink-0"></span>
+                                    <span>${f}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+                popupBody.appendChild(block);
+            }
+
+            popupOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePopup() {
+            popupOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        document.querySelectorAll('[data-popup]').forEach(card => {
+            card.addEventListener('click', () => openPopup(card.getAttribute('data-popup')));
+        });
+        ['navProjectsDesktop', 'navProjectsMobile'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openPopup('academic-projects');
+                    if (menuOpen) {
+                        menuOpen = false;
+                        mobileMenu.classList.remove('open');
+                        menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                    }
+                });
+            }
+        });
+        popupClose.addEventListener('click', closePopup);
+        popupOverlay.addEventListener('click', (e) => { if (e.target === popupOverlay) closePopup(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
+
+        // =============================================
+        // UI INTERACTIONS
+        // =============================================
+        window.addEventListener('load', () => {
+            setTimeout(() => document.getElementById('loader').classList.add('hidden'), 600);
+        });
+
+        const cursorDot = document.getElementById('cursorDot');
+        const cursorRing = document.getElementById('cursorRing');
+        let cursorX = 0, cursorY = 0, ringX = 0, ringY = 0;
+        document.addEventListener('mousemove', (e) => {
+            cursorX = e.clientX; cursorY = e.clientY;
+            cursorDot.style.left = cursorX + 'px';
+            cursorDot.style.top = cursorY + 'px';
+        });
+        function updateCursorRing() {
+            ringX += (cursorX - ringX) * 0.12;
+            ringY += (cursorY - ringY) * 0.12;
+            cursorRing.style.left = ringX + 'px';
+            cursorRing.style.top = ringY + 'px';
+            requestAnimationFrame(updateCursorRing);
+        }
+        updateCursorRing();
+        document.querySelectorAll('a, button, [data-tilt], .project-card, .stat-card, .popup-close').forEach(el => {
+            el.addEventListener('mouseenter', () => cursorRing.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursorRing.classList.remove('hover'));
+        });
+
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileMenu = document.getElementById('mobileMenu');
+        let menuOpen = false;
+        menuToggle.addEventListener('click', () => {
+            menuOpen = !menuOpen;
+            mobileMenu.classList.toggle('open', menuOpen);
+            menuToggle.innerHTML = menuOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+        });
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                menuOpen = false;
+                mobileMenu.classList.remove('open');
+                menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            });
+        });
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    if (entry.target.classList.contains('skill-item')) {
+                        const fill = entry.target.querySelector('.skill-bar-fill');
+                        if (fill) fill.style.width = entry.target.getAttribute('data-percent') + '%';
+                    }
+                }
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        const navLinks = document.querySelectorAll('.nav-link[data-section]');
+        const navObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.id;
+                    navLinks.forEach(l => l.classList.toggle('active', l.dataset.section === id));
+                }
+            });
+        }, { threshold: 0.3, rootMargin: '-80px 0px -40% 0px' });
+        document.querySelectorAll('section[id]').forEach(s => navObserver.observe(s));
+
+        document.querySelectorAll('[data-tilt]').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const r = card.getBoundingClientRect();
+                const rx = ((e.clientY - r.top - r.height/2) / (r.height/2)) * -6;
+                const ry = ((e.clientX - r.left - r.width/2) / (r.width/2)) * 6;
+                card.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.01)`;
+            });
+            card.addEventListener('mouseenter', () => card.style.transition = 'none');
+            card.addEventListener('mouseleave', () => {
+                card.style.transition = 'transform 0.4s ease';
+                card.style.transform = 'perspective(800px) rotateX(0) rotateY(0) scale(1)';
+                setTimeout(() => card.style.transition = '', 400);
+            });
+        });
+
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            navbar.style.background = window.scrollY > 50 ? 'rgba(8,8,8,0.85)' : 'rgba(8,8,8,0.7)';
+            navbar.style.borderBottomColor = window.scrollY > 50 ? 'rgba(37,37,37,0.8)' : 'rgba(37,37,37,0.5)';
+        });
+    </script>
+</body>
+</html>
